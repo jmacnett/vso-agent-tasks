@@ -278,7 +278,7 @@ function packageTask(pkgPath, commonDeps, commonSrc){
 
                     var dest = path.join(tgtPath, libDep.dest) 
                     shell.mkdir('-p', dest);
-                    shell.cp('-R', tskLibSrc, dest);
+                    shell.cp('-R', path.join(tskLibSrc, '*'), dest);
                 })
 
                 // Statically link the required internal common modules.
