@@ -10,7 +10,7 @@ import path = require('path');
 var shell = require('shelljs');
 var ps = shell.which('powershell');
 
-describe('MSBuildHelpers Suite', function () {
+describe('Common-MSBuildHelpers Suite', function () {
     this.timeout(20000);
 
     before((done) => {
