@@ -117,13 +117,13 @@ gulp.task('compileTasks', ['clean'], function (cb) {
 
 gulp.task('compile', ['compileTasks', 'compileTests']);
 
-gulp.task('locCommonModules', ['compileTasks'], function () {
+gulp.task('locCommon', ['compileTasks'], function () {
     return gulp.src(path.join(__dirname, 'Tasks/Common/**/module.json'))
-        .pipe(pkgm.LocModule());
+        .pipe(pkgm.LocCommon());
 });
 
-gulp.task('build', ['locCommonModules'], function () {
-    // Load the dependency references to the internal common modules.
+gulp.task('build', ['locCommon'], function () {
+    // Load the dependency references to the intra-repo modules.
     var commonDeps = require('./common.json');
     var commonSrc = path.join(__dirname, 'Tasks/Common');
 
@@ -132,20 +132,6 @@ gulp.task('build', ['locCommonModules'], function () {
     return gulp.src(path.join(__dirname, 'Tasks', '**/task.json'))
         .pipe(pkgm.PackageTask(_buildRoot, commonDeps, commonSrc));
 });
-
-// gulp.task('build', ['packageTask'], function () {
-//     for (var i = 0 ; i < common.length ; i++) {
-//         var src = path.join(_buildRoot, common[i].src);
-//         var dest = path.join(_buildRoot, common[i].dest);
-//         console.log("Copying '" + common[i].src + "' to '" + common[i].dest + "'");
-//         shell.mkdir('-p', dest)
-//         shell.cp('-R', src, dest)
-//     }
-// 
-//     var src = path.join(_buildRoot, 'Common');
-//     console.log("Deleting '" + src + "'")
-//     //shell.rm(path.join(_buildRoot, 'Common'))
-// });
 
 gulp.task('test', ['testResources'], function () {
 	process.env['TASK_TEST_TEMP'] = _testTemp;

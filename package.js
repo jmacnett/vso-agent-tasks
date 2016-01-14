@@ -157,7 +157,7 @@ var createStrings = function(task, pkgPath, srcPath) {
 	return defer.promise;
 };
 
-function locCommonModule() {
+function locCommon() {
     return through.obj(
         function(moduleJson, encoding, done) {
             // Validate the module.json file exists.
@@ -264,7 +264,7 @@ function packageTask(pkgPath, commonDeps, commonSrc){
                 }
 
                 // Statically link the required external task libs.
-                for (var libDep in libDeps) {
+                libDeps.forEach(function (libDep) {
                     var libVer = externals[libDep.name];
                     if (!libVer) {
                         throw new Error('External ' + libDep.name + ' not defined in externals.json.');
@@ -279,18 +279,18 @@ function packageTask(pkgPath, commonDeps, commonSrc){
                     var dest = path.join(tgtPath, libDep.dest) 
                     shell.mkdir('-p', dest);
                     shell.cp('-R', tskLibSrc, dest);
-                }
+                })
 
                 // Statically link the required internal common modules.
                 var taskDeps;
-                if ((taskDeps = commonDeps[task.name]) && taskDeps.length) {
-                    for (var dep in taskDeps) {
-                        gutil.log('Linking ' + dep.module + ' to ' + task.name);
+                if ((taskDeps = commonDeps[task.name])) {
+                    taskDeps.forEach(function (dep) {
+                        gutil.log('Linking ' + dep.module + ' into ' + task.name);
                         var src = path.join(commonSrc, dep.module);
                         var dest = path.join(tgtPath, dep.dest);
                         shell.mkdir('-p', dest);
                         shell.cp('-R', src, dest);
-                    }
+                    })
                 }
 
 	        	return;
@@ -307,5 +307,5 @@ function packageTask(pkgPath, commonDeps, commonSrc){
 		});    
 }
 
-exports.LocCommonModule = locCommonModule;
+exports.LocCommon = locCommon;
 exports.PackageTask = packageTask;
