@@ -59,14 +59,10 @@ function GetMsBuildRunnerPostTestArgs()
 
 function UploadSummaryMdReport
 {
-	$agentBuildDirectory = GetTaskContextVariable "Agent.BuildDirectory" 
-	if (!$agentBuildDirectory)
-	{
-		throw "Could not retrieve the Agent.BuildDirectory variable";
-	}
+	$sonarQubeBuildDir = GetSonarQubeBuildDirectory
 
 	# Upload the summary markdown file
-	$summaryMdPath = [System.IO.Path]::Combine($agentBuildDirectory, ".sonarqube", "out", "summary.md")
+	$summaryMdPath = [System.IO.Path]::Combine($sonarQubeBuildDir, "out", "summary.md")
 	Write-Verbose "summaryMdPath = $summaryMdPath"
 
 	if ([System.IO.File]::Exists($summaryMdPath))
@@ -80,39 +76,64 @@ function UploadSummaryMdReport
 	}
 }
 
+
 function HandleCodeAnalysisReporting
 {
-	$agentBuildDirectory = GetTaskContextVariable "Agent.BuildDirectory" 
-	if (!$agentBuildDirectory)
-	{
-		throw "Could not retrieve the Agent.BuildDirectory variable.";
-	}
-
 	$sonarQubeAnalysisModeIsIncremental = GetTaskContextVariable "MsBuild.SonarQube.AnalysisModeIsIncremental"
 	if ($sonarQubeAnalysisModeIsIncremental -ieq "true")
 	{
-		GenerateCodeAnalysisReport $agentBuildDirectory
+		GenerateCodeAnalysisReport  
 	}
 }
+
+
+
+function BreakBuildOnQualityGateFailure
+{
+    $breakBuild = GetTaskContextVariable "MsBuild.SonarQube.BreakBuild"        
+    $breakBuildEnabled = Convert-String $breakBuild Boolean
+
+    if ($breakBuildEnabled)
+    {
+        Write-Verbose "Waiting for the build to complete to analyze quality gate success."
+        $sonarDir = GetSonarScannerDirectory 
+        $reportTaskFile = [System.IO.Path]::Combine($sonarDir, "report-task.txt");
+
+        if (![System.IO.File]::Exists($reportTaskFile))
+        {
+            Write-Verbose "Could not find the task details file at $reportTaskFile"
+            throw "Cannot determine if the analysis has finished. Possible cause: your SonarQube server version is lower than 5.3 - for more details on how to break the build in this case see http://go.microsoft.com/fwlink/?LinkId=722407"
+        }
+
+            // TODO 
+
+    }
+    else
+    {
+        Write-Verbose "Build not set to fail if the associated quality gate fails."
+    }
+}
+
+
 
 
 ################# Helpers ######################
 
 
-function GetTaskContextVariable()
+function GetSonarQubeBuildDirectory
 {
-	param([string][ValidateNotNullOrEmpty()]$varName)
-	return Get-TaskVariable -Context $distributedTaskContext -Name $varName -Global $FALSE
+    $agentBuildDirectory = GetTaskContextVariable "Agent.BuildDirectory" 
+	if (!$agentBuildDirectory)
+	{
+		throw "Could not retrieve the Agent.BuildDirectory variable";
+	}
+
+	return [System.IO.Path]::Combine($agentBuildDirectory, ".sonarqube");
 }
 
-# When passing arguments to a process, the quotes need to be doubled and   
-# the entire string needs to be placed inside quotes to avoid issues with spaces  
-function EscapeArg  
-{  
-    param([string]$argVal)  
-  
-    $argVal = $argVal.Replace('"', '""');  
-    $argVal = '"' + $argVal + '"';  
-  
-    return $argVal;  
+function GetSonarScannerDirectory
+{
+    $sqBuildDir = GetSonarQubeBuildDirectory
+    
+    return [System.IO.Path]::Combine($sqBuildDir, "out", ".sonar");
 }
